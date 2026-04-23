@@ -1,0 +1,20 @@
+# Archivos temporales de compilación
+/build/
+/.gradle/
+/bin/
+
+# Configuración del IDE (IntelliJ / jMonkey SDK)
+.idea/
+*.iml
+*.iws
+.project
+.classpath
+.settings/
+nbproject/private/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Otros
+*.log
