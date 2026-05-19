@@ -9,11 +9,19 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture;
+import java.util.ArrayList;
+import com.jme3.font.BitmapText;
+import com.jme3.math.ColorRGBA;
 
 public class Main extends SimpleApplication implements ActionListener {
 
     private Player player;
     private boolean up, down, left, right;
+    private boolean enTransicion = false;
+    private ArrayList<Arbusto> listaArbustos = new ArrayList<>();
+    private GestorInteracciones interacciones;
+    private GestorGUI gestorGUI;
+    
 
     public static void main(String[] args) {
         Main app = new Main();
@@ -42,17 +50,26 @@ public class Main extends SimpleApplication implements ActionListener {
         matMap.setTexture("ColorMap", mapTexture);
         mapGeo.setMaterial(matMap);
         rootNode.attachChild(mapGeo);
-
+        
+        GestorEntorno entorno = new GestorEntorno(assetManager, rootNode, listaArbustos);
+        entorno.crearCuadriculaAleatoria(100, 100, 4, 2);
+        entorno.crearCuadriculaAleatoria(850, 700, 4, 2);
+        entorno.crearCuadriculaAleatoria(1350, 320, 5, 3);
+        entorno.crearCuadriculaAleatoria(200, 800, 3, 3);
+        
         // se inicia el jugador (Player)
         // le pasamos el ancho y alto para que el mismo calcule su centro
         player = new Player(assetManager, rootNode, width, height);
-
+        
         // controles del juego
         initKeys();
         
         // limpiar pantalla de datos tecnicos
         setDisplayStatView(false);
         setDisplayFps(false);
+        
+        interacciones = new GestorInteracciones(player, listaArbustos);
+        gestorGUI = new GestorGUI(assetManager, guiNode, cam, guiFont);
     }
 
     private void initKeys() {
@@ -73,6 +90,11 @@ public class Main extends SimpleApplication implements ActionListener {
 
     @Override
     public void simpleUpdate(float tpf) {
+        if (interacciones.vigilar(tpf)) {
+            enTransicion = true;
+            gestorGUI.mostrarPantallaCarga();
+        }
+        
         float dx = 0, dy = 0;
         if (up) dy = 1;
         if (down) dy = -1;
@@ -81,6 +103,15 @@ public class Main extends SimpleApplication implements ActionListener {
 
         if (dx != 0 || dy != 0) {
             player.move(dx, dy, tpf);
+        }else{
+            player.stop();
         }
+        
+        // agregamos el movimietno con efecto e viento a los arbustos 
+        for (Arbusto arbusto : listaArbustos){
+            arbusto.mecerConViento(tpf);
+        }
+        
+        interacciones.vigilar(tpf);
     }
 }
