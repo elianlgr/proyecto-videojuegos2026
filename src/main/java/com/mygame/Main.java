@@ -21,6 +21,9 @@ public class Main extends SimpleApplication implements ActionListener {
     private ArrayList<Arbusto> listaArbustos = new ArrayList<>();
     private GestorInteracciones interacciones;
     private GestorGUI gestorGUI;
+    private PlayerPlataforma playerLateral;
+    private boolean saltar = false;
+    private boolean enEscenario2 = false;
     
 
     public static void main(String[] args) {
@@ -60,6 +63,8 @@ public class Main extends SimpleApplication implements ActionListener {
         // se inicia el jugador (Player)
         // le pasamos el ancho y alto para que el mismo calcule su centro
         player = new Player(assetManager, rootNode, width, height);
+        //creamos al jugador del escenario 2
+        playerLateral = new PlayerPlataforma(assetManager, rootNode);
         
         // controles del juego
         initKeys();
@@ -78,6 +83,10 @@ public class Main extends SimpleApplication implements ActionListener {
         inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A), new KeyTrigger(KeyInput.KEY_LEFT));
         inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D), new KeyTrigger(KeyInput.KEY_RIGHT));
         inputManager.addListener(this, "Up", "Down", "Left", "Right");
+        
+        // teclas para playerplataforma
+        inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addListener(this, "Up", "Down", "Left", "Right", "Jump");
     }
 
     @Override
@@ -86,32 +95,50 @@ public class Main extends SimpleApplication implements ActionListener {
         if (name.equals("Down")) down = isPressed;
         if (name.equals("Left")) left = isPressed;
         if (name.equals("Right")) right = isPressed;
+        if (name.equals("Jump")) { saltar = isPressed; }
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        if (interacciones.vigilar(tpf)) {
-            enTransicion = true;
-            gestorGUI.mostrarPantallaCarga();
+        if (enTransicion) {
+            return; 
         }
-        
-        float dx = 0, dy = 0;
-        if (up) dy = 1;
-        if (down) dy = -1;
-        if (left) dx = -1;
-        if (right) dx = 1;
 
-        if (dx != 0 || dy != 0) {
-            player.move(dx, dy, tpf);
-        }else{
-            player.stop();
+        // en que escenario estamos jugando actualmente?
+        if (enEscenario2) {
+            // logica del escenario 2
+            
+            float direccionX = 0;
+            if (left) direccionX = -1;
+            if (right) direccionX = 1;
+            // nota: ignoramos 'up' y 'down' porque aqui solo caminamos a los lados
+            
+            // le pasamos las teclas a nuestro simulador de fisicas
+            playerLateral.actualizarFisicas(direccionX, saltar, tpf);
+            
+        } else {
+            // logica del escenario 1 (top-down / pokemon)
+            
+            float dx = 0, dy = 0;
+            if (up) dy = 1;
+            if (down) dy = -1;
+            if (left) dx = -1;
+            if (right) dx = 1;
+
+            if (dx != 0 || dy != 0) {
+                player.move(dx, dy, tpf);
+            } else {
+                player.stop(); 
+            }
+            
+            for (Arbusto arbusto : listaArbustos){
+                arbusto.mecerConViento(tpf);
+            }
+
+            if (interacciones.vigilar(tpf)) {
+                enTransicion = true;
+                gestorGUI.mostrarPantallaCarga();
+            }
         }
-        
-        // agregamos el movimietno con efecto e viento a los arbustos 
-        for (Arbusto arbusto : listaArbustos){
-            arbusto.mecerConViento(tpf);
-        }
-        
-        interacciones.vigilar(tpf);
     }
 }
