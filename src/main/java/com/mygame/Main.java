@@ -38,7 +38,7 @@ public class Main extends SimpleApplication implements ActionListener {
         mapGeo.setLocalTranslation(0, 0, -1); 
 
         Material matMap = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        Texture mapTexture = assetManager.loadTexture("Textures/mapa.jpg");
+        Texture mapTexture = assetManager.loadTexture("Textures/escenario1.png");
         matMap.setTexture("ColorMap", mapTexture);
         mapGeo.setMaterial(matMap);
         rootNode.attachChild(mapGeo);
