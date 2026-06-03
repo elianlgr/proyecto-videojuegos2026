@@ -85,7 +85,7 @@ public class PlayerPlataforma {
     tiempoGolpe -= tpf;
 
     if (tiempoGolpe <= 0) {
-        recibiendoGolpe = false;
+        recibiendoGolpe = false; //esto lo que hace es que cambia el color al hacer daño!
         mat.setColor("Color", com.jme3.math.ColorRGBA.White);
     }
         }

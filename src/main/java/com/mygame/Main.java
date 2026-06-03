@@ -8,6 +8,9 @@ import com.jme3.math.Vector3f;
 import java.util.ArrayList;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.audio.AudioNode;
+import com.jme3.audio.AudioData; //esto es para agregar musica de fondo o sonidos:)
+
 
 // Clase principal que maneja el ciclo de vida del juego y las interacciones
 public class Main extends SimpleApplication implements ActionListener {
@@ -39,6 +42,12 @@ public class Main extends SimpleApplication implements ActionListener {
     // Variables para manejar la logica de victoria
     private boolean enVictoria = false;
     private float tiempoVictoria = 0f;
+    
+    // Variables para la musica
+    private AudioNode musicaEscenario1;
+    private AudioNode musicaEscenario2;
+    
+
 
     // Metodo de entrada principal que arranca la aplicacion jMonkeyEngine
     public static void main(String[] args) {
@@ -94,6 +103,31 @@ public class Main extends SimpleApplication implements ActionListener {
         initKeys();
         setDisplayStatView(false);
         setDisplayFps(false);
+        
+        //La musica bonita para el ambiente bien chidori 
+        musicaEscenario1 = new AudioNode(assetManager,
+        "Audio/Longing for AIR.wav",
+        AudioData.DataType.Stream);
+       
+        
+       
+
+        musicaEscenario1.setLooping(true);
+        musicaEscenario1.setPositional(false);
+        musicaEscenario1.setVolume(0.4f); // volumen medio-bajo
+        musicaEscenario1.play();
+        
+        musicaEscenario2= new AudioNode(assetManager, 
+        "Audio/The Lobotomy.wav",
+        AudioData.DataType.Stream);
+        
+        musicaEscenario2.setLooping(true);
+        musicaEscenario2.setPositional(false);
+        musicaEscenario2.setVolume(0.5f);
+
+        musicaEscenario1.play();
+        
+       
     }
 
     // Registra los atajos del teclado y del raton
@@ -201,8 +235,10 @@ public class Main extends SimpleApplication implements ActionListener {
             if (tiempoDeCarga >= 3.0f) { 
                 enTransicion = false;
                 enEscenario2 = true;
+                musicaEscenario1.stop(); //esto es para que la musica se calle  
                 
                 // Activa el segundo escenario de formato plataforma
+                musicaEscenario2.play(); // y de paso se pone la musica que sigue
                 gestorEscenarios.cambiarAEscenario2();
                 enemigo.activar();
                 gestorGUI.ocultarPantallaCarga(); 
