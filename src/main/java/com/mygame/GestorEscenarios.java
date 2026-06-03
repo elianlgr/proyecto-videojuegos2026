@@ -9,22 +9,24 @@ import com.jme3.scene.Spatial.CullHint;
 import com.jme3.texture.Texture;
 import java.util.ArrayList;
 
+// Clase que administra la carga y transicion entre los diferentes mapas o niveles del juego
 public class GestorEscenarios {
     
+    // Referencias principales al motor para cargar recursos y anadir objetos a la escena
     private AssetManager assetManager;
     private Node rootNode;
     
-    // Geometrias que sostendran las imagenes de tus fondos
+    // Geometrias bidimensionales que renderizan las imagenes de fondo de cada nivel
     private Geometry mapGeo1;
     private Geometry mapGeo2;
     
-    // Referencias a los actores y gestores externos
+    // Referencias a las entidades interactivas y gestores necesarios para sincronizar los cambios de estado
     private Player playerTopDown;
     private PlayerPlataforma playerLateral;
     private ArrayList<Arbusto> listaArbustos;
     private GestorGUI gestorGUI;
 
-    // Constructor actualizado
+    // Constructor que recibe y almacena todas las instancias que seran afectadas por los cambios de mapa
     public GestorEscenarios(AssetManager assetManager, Node rootNode, Player p1, PlayerPlataforma p2, ArrayList<Arbusto> arbustos, GestorGUI gui) {
         this.assetManager = assetManager;
         this.rootNode = rootNode;
@@ -34,11 +36,12 @@ public class GestorEscenarios {
         this.gestorGUI = gui; 
     }
 
-    // Metodo para crear y cargar los fondos en memoria
+    // Genera las superficies y aplica las texturas de fondo dejandolas listas en la jerarquia principal
     public void cargarFondos(float width, float height) {
+        // Crea un rectangulo base con las dimensiones totales de la pantalla
         Quad mapQuad = new Quad(width, height); 
         
-        // --- FONDO ESCENARIO 1 (Tipo Pokemon) ---
+        // Configura la geometria y textura del primer nivel de exploracion
         mapGeo1 = new Geometry("MapaMundo1", mapQuad);
         mapGeo1.setLocalTranslation(0, 0, -1); 
         Material matMap1 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -47,7 +50,7 @@ public class GestorEscenarios {
         mapGeo1.setMaterial(matMap1);
         rootNode.attachChild(mapGeo1);
         
-        // --- FONDO ESCENARIO 2 (Tipo Hollow Knight) ---
+        // Configura la geometria y textura del segundo nivel orientado al combate de plataformas
         mapGeo2 = new Geometry("MapaMundo2", mapQuad);
         mapGeo2.setLocalTranslation(0, 0, -1); 
         Material matMap2 = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -57,37 +60,44 @@ public class GestorEscenarios {
         rootNode.attachChild(mapGeo2);
     }
 
-    // Configuracion inicial al arrancar el juego
+    // Establece la configuracion inicial al iniciar el juego mostrando solo el entorno de vista superior
     public void iniciarEscenario1() {
+        // Hace visible el fondo del mundo abierto y oculta el entorno de batalla
         mapGeo1.setCullHint(CullHint.Never);             
         mapGeo2.setCullHint(CullHint.Always);            
+        
+        // Muestra al jugador con perspectiva aerea y desactiva el modelo de plataformas
         playerTopDown.getGeom().setCullHint(CullHint.Never); 
         playerLateral.desactivar();                      
         
+        // Asegura que toda la vegetacion interactiva sea visible
         for (Arbusto arbusto : listaArbustos) {
             arbusto.getNodo().setCullHint(CullHint.Never);
         }
+        
+        // Oculta la interfaz de salud ya que no hay combates en esta zona
         if (gestorGUI != null) {
             gestorGUI.ocultarBarraVida();
         }
     }
 
-    // Ejecuta la transicion visual completa al campo de batalla
+    // Realiza el cambio visual y logico ocultando la zona de exploracion y revelando el entorno de batalla
     public void cambiarAEscenario2() {
-        // 1. Ocultar todo lo del Nivel 1 
+        // Vuelve invisibles el mapa, el jugador y los elementos interactivos del primer escenario
         mapGeo1.setCullHint(CullHint.Always);
         playerTopDown.getGeom().setCullHint(CullHint.Always);
         for (Arbusto arbusto : listaArbustos) {
             arbusto.getNodo().setCullHint(CullHint.Always);
         }
         
-        // 2. Mostrar Nivel 2 
+        // Muestra el fondo del segundo escenario y el personaje con fisicas de salto
         mapGeo2.setCullHint(CullHint.Never);
         playerLateral.activar();
         
-        // 3. Encender la interfaz de combate
+        // Activa los elementos de la interfaz de usuario dedicados a la pelea
         gestorGUI.mostrarBarraVida(); 
         
+        // Confirmacion por consola del exito de la transicion
         System.out.println("Transicion al Escenario 2 gestionada exitosamente.");
     }
 }

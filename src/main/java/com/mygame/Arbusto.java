@@ -13,64 +13,76 @@ import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
 import com.jme3.texture.Texture;
 
+// Clase que representa un elemento decorativo de la vegetacion con animacion de balanceo
 public class Arbusto {
+    
+    // Nodo principal que agrupa la geometria para permitir rotaciones desde un punto de pivote especifico
     private Node nodoArbusto;
+    
+    // Acumulador de tiempo para calcular el ciclo de la animacion del viento
     private float tiempo = 0;
-    // que tan rapido se mece
+    
+    // Multiplicador que define la velocidad del ciclo de balanceo
     private float velocidadViento = 2.0f;
-    // que tanto se dobla (en radianes)
+    
+    // Amplitud maxima del doblez provocado por el viento expresada en radianes
     private float fuerzaViento = 0.08f;   
 
+    // Inicializa el objeto, configura su geometria y lo ubica en las coordenadas indicadas dentro de la escena
     public Arbusto(AssetManager assetManager, Node rootNode, float x, float y, String texturePath) {
-        // usamos un Node para poder agrupar y rotar la imagen desde la base, no desde una esquina
+        
+        // Crea un nodo contenedor para manipular transformaciones complejas como la rotacion desde la base
         nodoArbusto = new Node("NodoArbusto");
 
-        // asumimos un tamaño para el arbusto en pantalla
+        // Define las dimensiones fisicas que tendra la imagen bidimensional en el mundo del juego
         float width = 100f;
         float height = 80f;
         Quad quad = new Quad(width, height);
         Geometry geom = new Geometry("ArbustoGeo", quad);
 
-        // movemos la geometria un poco a la izquierda para que el "centro de rotacion" quede en la base
+        // Desplaza la geometria graficamente hacia la izquierda para que el eje de rotacion quede en el centro de la base
         geom.setLocalTranslation(-width / 2, 0, 0);
 
-        // cargamos la textura y material
+        // Genera el material base sin sombreado y aplica la textura recibida por parametro
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Texture tex = assetManager.loadTexture(texturePath);
         mat.setTexture("ColorMap", tex);
         
-        // activa la transparencia del archivo PNG
+        // Configura el renderizado para que reconozca el canal alfa y dibuje correctamente las transparencias
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         geom.setMaterial(mat);
+        
+        // Configura los parametros de visibilidad continua y los asigna a la cola de dibujado correspondiente
         geom.setCullHint(CullHint.Never);
         geom.setQueueBucket(Bucket.Transparent); 
         geom.setCullHint(CullHint.Never);
         nodoArbusto.setCullHint(CullHint.Never);
 
-        // armamos el arbusto
+        // Vincula la imagen ya texturizada al nodo contenedor principal
         nodoArbusto.attachChild(geom);
         
-        // Z = 2 para que esté por delante del mapa (Z=-1) pero detras del jugador (Z=5)
+        // Posiciona el arbusto en el espacio asignando una profundidad intermedia para organizar las capas visuales
         nodoArbusto.setLocalTranslation(x, y, 2);
         
-        // lo agregamos al escenario principal
+        // Integra el nodo finalizado al arbol de la escena para que se muestre en pantalla
         rootNode.attachChild(nodoArbusto);
     }
 
-    // este metodo lo llamaremos constantemente desde el Main para simular el viento
+    // Modifica dinamicamente la rotacion del nodo basandose en el tiempo para crear una ilusion de movimiento organico
     public void mecerConViento(float tpf) {
+        // Avanza el tiempo virtual de la animacion de forma proporcional a la velocidad definida
         tiempo += tpf * velocidadViento;
         
-        // calculamos el angulo usando la curva del Seno
+        // Genera un movimiento oscilatorio suave en ambas direcciones utilizando una funcion senoidal
         float angulo = FastMath.sin(tiempo) * fuerzaViento;
         
-        // aplicamos la rotacion solo en el eje Z (para que gire en 2D)
+        // Convierte el angulo calculado a una rotacion aplicable unicamente sobre el eje de profundidad Z
         Quaternion rotacion = new Quaternion();
         rotacion.fromAngleAxis(angulo, Vector3f.UNIT_Z);
         nodoArbusto.setLocalRotation(rotacion);
     }
     
-    // nos permite tener el nodo para calcular colisiones 
+    // Proporciona acceso al nodo estructural para permitir la evaluacion de distancias y colisiones
     public Node getNodo() {
         return nodoArbusto;
     }

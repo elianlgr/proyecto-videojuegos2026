@@ -4,42 +4,49 @@ import com.jme3.asset.AssetManager;
 import com.jme3.scene.Node;
 import java.util.ArrayList;
 
+// Clase responsable de la generacion y distribucion de los elementos decorativos del mapa
 public class GestorEntorno {
     
+    // Dependencias del motor grafico para cargar recursos y anadirlos a la escena
     private AssetManager assetManager;
     private Node rootNode;
+    
+    // Referencia a la lista global donde se almacenara la vegetacion creada
     private ArrayList<Arbusto> listaArbustos;
 
-    // el constructor que recibe las herramientas desde tu Main
+    // Inicializa el gestor vinculando las herramientas principales del juego y la lista de objetos
     public GestorEntorno(AssetManager assetManager, Node rootNode, ArrayList<Arbusto> listaArbustos) {
         this.assetManager = assetManager;
         this.rootNode = rootNode;
         this.listaArbustos = listaArbustos;
     }
 
-    // metodo para crear una cuadrícula ordenada pero con colores al azar
+    // Genera un bloque rectangular de arbustos posicionados matematicamente pero con variacion visual
     public void crearCuadriculaAleatoria(float inicioX, float inicioY, int columnas, int filas) {
-        // lista con tus 3 tipos de arbustos
+        
+        // Rutas de los recursos graficos disponibles para la vegetacion
         String[] texturas = {
             "Textures/arbustoAzul.png",
             "Textures/arbustoRojo.png",
             "Textures/arbustoVioleta.png"
         };
 
-        // separacion entre cada arbusto (puedes ajustar estos números si los quieres más juntos o separados)
+        // Distancia en unidades que habra entre cada elemento generado
         float separacionX = 90f; 
         float separacionY = 70f; 
 
+        // Recorre las dimensiones indicadas para poblar la cuadricula iteracion por iteracion
         for (int fila = 0; fila < filas; fila++) {
             for (int col = 0; col < columnas; col++) {
-                // calculamos la posicion exacta en la rejilla
+                
+                // Calcula las coordenadas bidimensionales de la celda actual
                 float posX = inicioX + (col * separacionX);
                 float posY = inicioY + (fila * separacionY);
 
-                // elegimos un color al azar de la lista
+                // Selecciona un numero aleatorio para escoger un color distinto para cada instancia
                 int indiceTextura = (int) (Math.random() * texturas.length);
 
-                // creamos el arbusto y lo metemos a la lista para que se mueva con el viento
+                // Instancia el nuevo objeto grafico en la escena y lo registra en la lista global de interacciones
                 Arbusto nuevoArbusto = new Arbusto(assetManager, rootNode, posX, posY, texturas[indiceTextura]);
                 listaArbustos.add(nuevoArbusto);
             }
