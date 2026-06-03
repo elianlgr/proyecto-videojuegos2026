@@ -51,6 +51,9 @@ public class PlayerPlataforma {
     
     // Indicador del estado ofensivo
     private boolean atacando = false;
+    private boolean recibiendoGolpe = false;
+    private float tiempoGolpe = 0f;
+    private Material mat;
 
     // Inicializa la forma geometrica, carga la textura principal y configura su transparencia
     public PlayerPlataforma(AssetManager assetManager, Node rootNode, float screenWidth) {
@@ -59,9 +62,11 @@ public class PlayerPlataforma {
         geom = new Geometry("PlayerPlataformaNode", quad);
         geom.setLocalTranslation(100, sueloY, 6); 
 
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        
+        mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Texture tex = assetManager.loadTexture("Textures/PlayerPlataforma.png"); 
         mat.setTexture("ColorMap", tex);
+        mat.setColor("Color", com.jme3.math.ColorRGBA.White);
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         geom.setMaterial(mat);
 
@@ -76,6 +81,15 @@ public class PlayerPlataforma {
     // Procesa las entradas de movimiento, aplica gravedad, actualiza la posicion y calcula la animacion
     public void actualizarFisicas(float direccionX, boolean quiereSaltar, float tpf) {
 
+        if (recibiendoGolpe) {
+    tiempoGolpe -= tpf;
+
+    if (tiempoGolpe <= 0) {
+        recibiendoGolpe = false;
+        mat.setColor("Color", com.jme3.math.ColorRGBA.White);
+    }
+        }
+        
         // Detiene el movimiento horizontal si el personaje esta ejecutando un ataque
         if (atacando) {
             direccionX = 0; 
@@ -237,10 +251,18 @@ public class PlayerPlataforma {
     }
     
     // Metodos de utilidad para la gestion de reduccion de salud
-    public void recibirDano(int cantidad) { 
-        vidaActual -= cantidad; 
-        if (vidaActual < 0) vidaActual = 0; 
+    public void recibirDano(int cantidad) {
+    vidaActual -= cantidad;
+
+    if (vidaActual < 0) {
+        vidaActual = 0;
     }
+
+    recibiendoGolpe = true;
+    tiempoGolpe = 0.15f;
+
+    mat.setColor("Color", com.jme3.math.ColorRGBA.Red);
+    }  // se modificó para de esta forma darle más realismo al golpe
     
     // Retorna los puntos de salud restantes del personaje
     public int getVidaActual() { 

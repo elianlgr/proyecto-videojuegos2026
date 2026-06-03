@@ -12,6 +12,7 @@ import com.jme3.scene.VertexBuffer;
 import com.jme3.texture.Texture;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
 
+
 // Clase que representa a un enemigo controlado por la computadora con inteligencia artificial basica
 public class EnemigoCPU {
     
@@ -46,6 +47,8 @@ public class EnemigoCPU {
     private float velocidadAnimacion = 0.1f;
     private String estadoActual = ""; 
     private boolean mirandoIzquierda = false;
+    private float tiempoGolpe = 0f; // esto es para que le de un efecto al golpe
+    private boolean recibiendoGolpe = false;
 
     // Inicializa el modelo del enemigo, carga sus texturas y lo posiciona oculto en el escenario
     public EnemigoCPU(AssetManager assetManager, Node rootNode, float screenWidth) {
@@ -60,8 +63,12 @@ public class EnemigoCPU {
         configurarTextura(texWalk);
         configurarTextura(texAttack);
 
+       
         mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.setTexture("ColorMap", texIdle);
+
+        mat.setColor("Color", com.jme3.math.ColorRGBA.White);
+
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         geom.setMaterial(mat);
 
@@ -113,6 +120,16 @@ public class EnemigoCPU {
 
     // Aplica el movimiento horizontal, la caida por gravedad, gestiona colisiones y controla los fotogramas
     private void actualizarFisicas(float direccionX, float tpf, PlayerPlataforma jugador, GestorGUI gui) {
+        
+        if (recibiendoGolpe) {
+    tiempoGolpe -= tpf;
+
+    if (tiempoGolpe <= 0) {
+        recibiendoGolpe = false;
+        mat.setColor("Color", com.jme3.math.ColorRGBA.White);
+    }
+}
+        
         if (direccionX < 0) mirandoIzquierda = true;
         else if (direccionX > 0) mirandoIzquierda = false;
 
@@ -167,6 +184,7 @@ public class EnemigoCPU {
             actualizarUV(columnaActual, totalFrames, mirandoIzquierda);
         }
     }
+    
 
     // Modifica la textura activa y ajusta la cantidad de fotogramas segun la accion que se va a realizar
     private void cambiarEstado(String nuevoEstado, int frames) {
@@ -200,18 +218,25 @@ public class EnemigoCPU {
     }
     
     // Reduce la vida del enemigo al recibir un golpe y solicita la actualizacion de la interfaz grafica
-    public void recibirDano(int cantidad, GestorGUI gui) {
-        if (vidaActual <= 0) return;
-        this.vidaActual -= cantidad;
-        
-        if (gui != null) {
-            gui.actualizarBarraVidaEnemigo(vidaActual);
-        }
-    
-        if (vidaActual <= 0) {
-            vidaActual = 0;
-        }
+   public void recibirDano(int cantidad, GestorGUI gui) {
+    if (vidaActual <= 0) return;
+
+    vidaActual -= cantidad;
+
+    recibiendoGolpe = true;
+    tiempoGolpe = 0.15f;
+
+    mat.setColor("Color", com.jme3.math.ColorRGBA.Red);
+
+    if (gui != null) {
+        gui.actualizarBarraVidaEnemigo(vidaActual);
     }
+
+    if (vidaActual < 0) {
+        vidaActual = 0;
+    }
+     // lo que hice aqui fue que active un daño al momento de golpear
+}
     
     // Metodos de utilidad para consultar el estado actual, mostrar, ocultar o eliminar al enemigo del mapa
     public int getVidaActual() { return vidaActual; }
