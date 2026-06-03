@@ -46,6 +46,8 @@ public class Main extends SimpleApplication implements ActionListener {
     // Variables para la musica
     private AudioNode musicaEscenario1;
     private AudioNode musicaEscenario2;
+    private AudioNode sonidoEspada1;
+    
     
 
 
@@ -127,6 +129,14 @@ public class Main extends SimpleApplication implements ActionListener {
 
         musicaEscenario1.play();
         
+        
+        // Sonidos de la espada 
+        sonidoEspada1= new AudioNode(assetManager,
+        "Audio/espada.wav",
+        AudioData.DataType.Buffer);
+        
+        sonidoEspada1.setPositional(false);
+        sonidoEspada1.setVolume(0.8f);
        
     }
 
@@ -168,6 +178,8 @@ public class Main extends SimpleApplication implements ActionListener {
         if (name.equals("Ataque") && isPressed) {
             if (enEscenario2) {
                 playerLateral.atacar();
+                sonidoEspada1.playInstance();
+                        
                 gestorCombate.verificarAtaqueJugador(true);
             }
         }
