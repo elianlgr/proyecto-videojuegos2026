@@ -8,40 +8,54 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Quad;
 import com.jme3.scene.Spatial.CullHint;
+import com.jme3.scene.VertexBuffer;
 import com.jme3.texture.Texture;
 import com.jme3.renderer.queue.RenderQueue.Bucket;
 
 public class PlayerPlataforma {
     private Geometry geom;
     private Quad quad;
-    // un poco mas rapido para el estilo plataforma
     private float speed = 200f; 
-    private float size = 60f; 
+    private float size = 450f; 
     
-    // velocidad vertical actual (subiendo o cayendo)
+    // fisicas
     private float velocidadY = 0f;          
-    // fuerza constante que nos jala hacia abajo
     private final float GRAVEDAD = -700f;
-    // el impulso inicial hacia arriba
     private final float FUERZA_SALTO = 350f; 
-    // linea del suelo temporal (mientras hacemos bloques)
-    private float sueloY = 100f;             
-    // ¿esta pisando firme?
+    private float sueloY = -75f;          
     private boolean enElSuelo = false;       
+    private float screenWidth;
+    
+    // vida
+    private int vidaMaxima = 5;
+    private int vidaActual = 5;
 
-    public PlayerPlataforma(AssetManager assetManager, Node rootNode) {
+    // --- VARIABLES DE LA CUADRICULA (SPRITE SHEET) ---
+    private float columnasTotales = 10f; 
+    private float filasTotales = 8f;
+
+    // variables de animacion
+    private float tiempoFrame = 0;
+    private float velocidadAnimacion = 0.06f; // CORREGIDO: Velocidad rapida para que no se vea estatico
+    private int columnaActual = 0; 
+    private int filaActual = 0; 
+    private boolean mirandoIzquierda = false;
+    private boolean anteriorMirandoIzquierda = false;
+    
+    // Maquina de Estados Visuales
+    private int estadoActual = 0;
+    
+    // variable de combate
+    private boolean atacando = false;
+
+    public PlayerPlataforma(AssetManager assetManager, Node rootNode, float screenWidth) {
+        this.screenWidth = screenWidth;
         quad = new Quad(size, size);
         geom = new Geometry("PlayerPlataformaNode", quad);
-        
-        // lo colocamos abajo a la izquierda para empezar el nivel lateral
-        // z=6 para que se dibuje por encima de todo
         geom.setLocalTranslation(100, sueloY, 6); 
 
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        
-        // nota: por ahora usare tu player.png actual para que compile sin errores.
-        // cuando dibujes tu hoja de sprites de perfil, solo cambias esto a "Textures/player_lateral.png"
-        Texture tex = assetManager.loadTexture("Textures/player.png"); 
+        Texture tex = assetManager.loadTexture("Textures/PlayerPlataforma.png"); 
         mat.setTexture("ColorMap", tex);
         mat.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
         geom.setMaterial(mat);
@@ -49,57 +63,163 @@ public class PlayerPlataforma {
         geom.setCullHint(CullHint.Never);
         geom.setQueueBucket(Bucket.Transparent);
         
-        // al principio del juego este personaje estara escondido
+        actualizarFrame(0, 0, false);
         desactivar();
-
         rootNode.attachChild(geom);
     }
 
-    // el motor de las fisicas: este metodo calculara la gravedad en tiempo real
     public void actualizarFisicas(float direccionX, boolean quiereSaltar, float tpf) {
-        Vector3f pos = geom.getLocalTranslation();
 
-        // 1. calcular movimiento horizontal (solo izquierda -1, derecha 1, o quieto 0)
-        float nuevoX = pos.x + (direccionX * speed * tpf);
-
-        // 2. aplicar gravedad (si no esta en el suelo, acumula velocidad de caida)
-        if (!enElSuelo) {
-            velocidadY += GRAVEDAD * tpf; 
+        if (atacando) {
+            direccionX = 0; 
         }
 
-        // 3. logica del salto
-        if (quiereSaltar && enElSuelo) {
-            // asignamos el impulso vertical directo
+        anteriorMirandoIzquierda = mirandoIzquierda;
+        if (direccionX < 0) mirandoIzquierda = true;
+        else if (direccionX > 0) mirandoIzquierda = false;
+
+        Vector3f pos = geom.getLocalTranslation();
+        float nuevoX = pos.x + (direccionX * speed * tpf);
+
+        if (nuevoX < 0) nuevoX = 0;
+        if (nuevoX > screenWidth - size) nuevoX = screenWidth - size;
+
+        if (!enElSuelo) velocidadY += GRAVEDAD * tpf; 
+
+        if (quiereSaltar && enElSuelo && !atacando) {
             velocidadY = FUERZA_SALTO; 
-            // en el aire inmediatamente
             enElSuelo = false;         
         }
 
-        // 4. calcular movimiento vertical
         float nuevoY = pos.y + (velocidadY * tpf);
-
-        // 5. colision temporal con el suelo
-        // si el calculo dice que va a bajar mas alla de nuestra linea de suelo, lo frenamos
         if (nuevoY <= sueloY) {
             nuevoY = sueloY;
             velocidadY = 0;
             enElSuelo = true;
         }
 
-        // aplicamos la posicion final calculada en este frame
         geom.setLocalTranslation(nuevoX, nuevoY, pos.z);
+
+        // --- MAQUINA DE ESTADOS VISUALES ---
+        int nuevoEstado = 0;
+        
+        if (atacando) {
+            nuevoEstado = filaActual; 
+        } else if (!enElSuelo) {
+            nuevoEstado = 4; // Salto
+        } else if (direccionX != 0) {
+            nuevoEstado = 2; // CORREGIDO: Fila 2 para correr, ya no desliza
+        } else {
+            nuevoEstado = 0; // Quieto
+        }
+
+        boolean cambioEstado = (nuevoEstado != estadoActual);
+        boolean cambioDireccion = (mirandoIzquierda != anteriorMirandoIzquierda);
+        
+        if (cambioEstado || cambioDireccion) {
+            estadoActual = nuevoEstado;
+            filaActual = nuevoEstado;
+            
+            if (cambioEstado) {
+                columnaActual = 0;
+                tiempoFrame = 0;
+            }
+            actualizarFrame(columnaActual, filaActual, mirandoIzquierda);
+        }
+
+        // --- GESTOR DE FOTOGRAMAS ---
+        tiempoFrame += tpf;
+        float limiteTiempo = atacando ? 0.08f : velocidadAnimacion;
+
+        if (tiempoFrame >= limiteTiempo) {
+            tiempoFrame = 0;
+            columnaActual++;
+            
+            int limiteColumnas = obtenerMaximoColumnas(filaActual);
+            
+            if (columnaActual > limiteColumnas) {
+                if (atacando) {
+                    atacando = false;
+                    estadoActual = -1; 
+                } else if (filaActual == 4) {
+                    columnaActual = limiteColumnas; // Congela el dibujo SOLO si está en el salto
+                } else {
+                    columnaActual = 0; // Reinicia a 0 cualquier otra accion (como correr), haciendo el bucle
+                }
+                actualizarFrame(columnaActual, filaActual, mirandoIzquierda);
+            } else {
+                actualizarFrame(columnaActual, filaActual, mirandoIzquierda);
+            }
+        }
     }
 
-    // metodos para encender y apagar al personaje cuando cambiemos de escenario
-    public void activar() {
-        geom.setCullHint(CullHint.Never);
+    // CORREGIDO: Limites exactos basados en la cantidad real de dibujos en tu PNG
+    private int obtenerMaximoColumnas(int fila) {
+        switch(fila) {
+            case 0: return 0; // Quieto (1 dibujo)
+            case 1: return 9; // Caminar (10 dibujos)
+            case 2: return 9; // Correr (10 dibujos)
+            case 3: return 7; // Dash (8 dibujos)
+            case 4: return 4; // Salto/Caida (5 dibujos)
+            case 5: return 2; // Ataque 1 (3 dibujos)
+            case 6: return 2; // Ataque 2 (3 dibujos)
+            case 7: return 3; // Ataque 3 (4 dibujos)
+            default: return 0;
+        }
     }
 
-    public void desactivar() {
-        geom.setCullHint(CullHint.Always);
+    public void atacar() {
+        if (!atacando && enElSuelo) {
+            atacando = true;
+            columnaActual = 0; 
+            tiempoFrame = 0;
+            
+            filaActual = 6; // El golpe especifico de espada
+            
+            estadoActual = filaActual; 
+            
+            actualizarFrame(columnaActual, filaActual, mirandoIzquierda);
+        }
+    }
+
+    private void actualizarFrame(int columna, int fila, boolean izquierda) {
+        int filaInvertida = (int)(filasTotales - 1) - fila; 
+        
+        float tamanoFrameX = 1.0f / columnasTotales; 
+        float tamanoFrameY = 1.0f / filasTotales; 
+        
+        float xStart = columna * tamanoFrameX;
+        float xEnd = xStart + tamanoFrameX;
+        
+        float yStart = filaInvertida * tamanoFrameY;
+        float yEnd = yStart + tamanoFrameY;
+
+        float[] texCoords;
+
+        if (izquierda) {
+            texCoords = new float[]{
+                xEnd,   yStart,
+                xStart, yStart,
+                xStart, yEnd,
+                xEnd,   yEnd
+            };
+        } else {
+            texCoords = new float[]{
+                xStart, yStart,
+                xEnd,   yStart,
+                xEnd,   yEnd,
+                xStart, yEnd
+            };
+        }
+
+        quad.clearBuffer(VertexBuffer.Type.TexCoord);
+        quad.setBuffer(VertexBuffer.Type.TexCoord, 2, texCoords);
     }
     
-    public Geometry getGeom() {
-        return geom;
-    }
+    public void recibirDano(int cantidad) { vidaActual -= cantidad; if (vidaActual < 0) vidaActual = 0; }
+    public int getVidaActual() { return vidaActual; }
+    public void resetVidaYPosicion() { vidaActual = vidaMaxima; velocidadY = 0f; enElSuelo = false; geom.setLocalTranslation(100, sueloY, 6); }
+    public void activar() { geom.setCullHint(CullHint.Never); }
+    public void desactivar() { geom.setCullHint(CullHint.Always); }
+    public Geometry getGeom() { return geom; }
 }
