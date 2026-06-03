@@ -10,6 +10,10 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.audio.AudioNode;
 import com.jme3.audio.AudioData; //esto es para agregar musica de fondo o sonidos:)
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 
 // Clase principal que maneja el ciclo de vida del juego y las interacciones
 public class Main extends SimpleApplication implements ActionListener {
@@ -197,7 +201,8 @@ public class Main extends SimpleApplication implements ActionListener {
             }
         }
     }
-
+    
+    
     // Bucle principal que actualiza toda la logica cada fotograma
     @Override
     public void simpleUpdate(float tpf) {
@@ -221,6 +226,8 @@ public class Main extends SimpleApplication implements ActionListener {
                 gestorGUI.actualizarBarraVidaEnemigo(5);
 
                 // Vuelve a colocar al jugador en el primer nivel
+                musicaEscenario2.stop();
+                musicaEscenario1.play();
                 gestorEscenarios.iniciarEscenario1();
                 up = down = left = right = saltar = false;
             }
@@ -236,12 +243,18 @@ public class Main extends SimpleApplication implements ActionListener {
                 tiempoVictoria = 0f;
 
                 gestorGUI.ocultarYouWin();
+                
+                //La musica vuelve al escenario
+                musicaEscenario2.stop();
+                musicaEscenario1.play();
+
 
                 // Restaura los datos principales
                 player.resetPosicion();
                 playerLateral.resetVidaYPosicion();
                 enemigo.destruir(rootNode);
-
+                
+                
                 // Genera un nuevo enemigo para la proxima partida
                 enemigo = new EnemigoCPU(assetManager, rootNode, cam.getWidth());
                 gestorGUI.actualizarBarraVidaEnemigo(5);
@@ -296,6 +309,8 @@ public class Main extends SimpleApplication implements ActionListener {
 
             // Verifica si el jugador derroto a su oponente
             if (enemigo.getVidaActual() <= 0 && !enVictoria) {
+              
+                
                 enVictoria = true;
                 tiempoVictoria = 0f;
                 gestorGUI.mostrarYouWin();

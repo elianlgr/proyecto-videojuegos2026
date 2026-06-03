@@ -84,6 +84,8 @@ public class EnemigoCPU {
         tex.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
         tex.setWrap(Texture.WrapMode.EdgeClamp);
     }
+    
+    
 
     // Evalua la distancia respecto al jugador para decidir si debe moverse hacia el o atacar
     public void actualizarInteligencia(PlayerPlataforma jugador, GestorGUI gui, float tpf) {
